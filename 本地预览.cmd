@@ -1,24 +1,27 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
-title 本地预览 - 写文章时用这个
+title Local preview - your-blog
 set "NODE_EXE=%USERPROFILE%\.dsh\dsh-runtimes\dsh-next-primary-runtime\dependencies\node\bin\node.exe"
 
+REM Supports Astro 5 (astro.js) and Astro 6+ (bin\astro.mjs)
+set "ASTRO_CLI=node_modules\astro\astro.js"
+if not exist "%ASTRO_CLI%" set "ASTRO_CLI=node_modules\astro\bin\astro.mjs"
+
 echo.
-echo  ============================================
-echo   正在启动本地预览...
-echo   浏览器打开 http://localhost:4321
-echo   改文章会自动刷新；按 Ctrl+C 停止
-echo  ============================================
+echo  ==========================================
+echo   Starting local preview ...
+echo   Open in browser:  http://localhost:4321
+echo   Files reload automatically. Ctrl+C to stop.
+echo  ==========================================
 echo.
 
-if not exist "%NODE_EXE%" (
-  echo  [!] 没找到内置 Node，改用系统 node
-  node node_modules\astro\astro.js dev
+if exist "%NODE_EXE%" (
+  "%NODE_EXE%" "%ASTRO_CLI%" dev
 ) else (
-  "%NODE_EXE%" node_modules\astro\astro.js dev
+  echo  [!] built-in Node not found, falling back to system node
+  node "%ASTRO_CLI%" dev
 )
 
 echo.
-echo  预览已停止。
+echo  Preview stopped.
 pause
