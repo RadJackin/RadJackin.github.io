@@ -91,28 +91,33 @@ if errorlevel 1 echo  （没有新的改动，继续部署）
 gh repo view "!GHUSER!/!REPO!" >nul 2>nul
 if errorlevel 1 (
   echo  正在创建仓库 !GHUSER!/!REPO! ...
-  gh repo create "!REPO!" --public --source=. --remote=origin --push
+  gh repo create "!REPO!" --public --source=. --remote=origin
   if errorlevel 1 (
     echo  [!] 创建仓库失败。可能是网络问题，或仓库名已被占用。
     pause
     exit /b 1
   )
-) else (
-  echo  仓库已存在，推送更新...
-  git remote remove origin >nul 2>nul
-  git remote add origin "https://github.com/!GHUSER!/!REPO!.git"
-  git push -u origin main
 )
+
+git remote remove origin >nul 2>nul
+git remote add origin "https://github.com/!GHUSER!/!REPO!.git"
+
+echo  正在设置站点地址变量 SITE_URL ...
+gh variable set SITE_URL --repo "!GHUSER!/!REPO!" --body "!SITEURL!" >nul 2>nul
 
 echo  正在开启 GitHub Pages（Actions 构建）...
 gh api -X POST "repos/!GHUSER!/!REPO!/pages" -f build_type=workflow >nul 2>nul
 if errorlevel 1 (
   gh api -X PUT "repos/!GHUSER!/!REPO!/pages" -f build_type=workflow >nul 2>nul
-  gh api -X PUT "repos/!GHUSER!/!REPO!/pages" -f "build_type=workflow" >nul 2>nul
 )
 
-echo  正在设置站点地址变量 SITE_URL ...
-gh variable set SITE_URL --repo "!GHUSER!/!REPO!" --body "!SITEURL!" >nul 2>nul
+echo  正在推送代码，触发自动构建...
+git push -u origin main
+if errorlevel 1 (
+  echo  [!] 推送失败。请检查网络，或重新运行本脚本。
+  pause
+  exit /b 1
+)
 
 echo.
 echo  ==================================================
