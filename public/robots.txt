@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# 部署后把下面的域名改成你的正式域名（同时改 astro.config.mjs 里的 SITE）
+Sitemap: https://halfway.example.com/sitemap-index.xml

@@ -1,0 +1,26 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, postSlug, shortDate, isoDate } from '../../lib/posts';
+
+const posts = await getPosts();
+---
+
+<BaseLayout title="全部日志" description={`共 ${posts.length} 篇开发日志与技术笔记，按时间倒序。`}>
+  <div class="wrap">
+    <header class="page-head">
+      <h1>全部日志</h1>
+      <p>共 {posts.length} 篇 · 按时间倒序 · 也可以直接 <a href="/search/" style="color:var(--accent-2);text-decoration:none">搜索</a></p>
+    </header>
+
+    <div class="logs" style="margin-top:26px">
+      {posts.map((p, i) => (
+        <a class="log" href={`/posts/${postSlug(p)}/`}>
+          <span class="no">{String(i + 1).padStart(2, '0')}</span>
+          <time datetime={isoDate(p.data.date)}>{shortDate(p.data.date)}</time>
+          <h3>{p.data.title}</h3>
+          {p.data.tags[0] && <span class="tag">{p.data.tags[0]}</span>}
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

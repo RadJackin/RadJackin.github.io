@@ -1,0 +1,90 @@
+---
+import '../styles/global.css';
+import { site } from '../site.config';
+
+interface Props {
+  title: string;
+  description?: string;
+  type?: 'website' | 'article';
+}
+
+const { title, description = site.description, type = 'website' } = Astro.props;
+
+const isHome = title === site.name;
+const pageTitle = isHome ? `${site.name} · ${site.tagline}` : `${title} · ${site.name}`;
+
+const fallback = new URL('https://halfway.example.com');
+const siteUrl = Astro.site ?? fallback;
+const canonical = new URL(Astro.url.pathname, siteUrl);
+const rssUrl = new URL('rss.xml', siteUrl);
+
+const path = Astro.url.pathname;
+const nav = [
+  { href: '/posts/', label: '日志' },
+  { href: '/tags/', label: '标签' },
+  { href: '/archive/', label: '归档' },
+  { href: '/search/', label: '搜索' },
+  { href: '/about/', label: '关于' },
+];
+const isActive = (href: string) => path.startsWith(href.replace(/\/$/, ''));
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.href} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#0b0d10" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="application/rss+xml" title={site.name} href={rssUrl.href} />
+
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical.href} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="sr-only" href="#content">跳到正文</a>
+
+    <header class="site">
+      <div class="site-inner">
+        <a class="brand" href="/">
+          <span class="dot" aria-hidden="true"></span>
+          <span>{site.name}</span>
+          <span class="sub">~ {site.nameEn}</span>
+        </a>
+        <nav class="top" aria-label="主导航">
+          {nav.map((item) => (
+            <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>{item.label}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <main class="main" id="content">
+      <slot />
+    </main>
+
+    <footer class="site">
+      <div class="foot-inner">
+        <div>© {site.since === new Date().getFullYear() ? site.since : `${site.since}–${new Date().getFullYear()}`} {site.name} · 用 Astro 搭的静态博客</div>
+        <div>
+          <a href="/rss.xml">rss</a> ·
+          <a href="/posts/">全部日志</a> ·
+          <a href={`mailto:${site.email}`}>email</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

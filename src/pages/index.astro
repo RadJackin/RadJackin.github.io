@@ -1,0 +1,68 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts, postSlug, shortDate, isoDate, readingTime, tagCounts } from '../lib/posts';
+
+const posts = await getPosts();
+const latest = posts.slice(0, 5);
+const tags = tagCounts(posts).slice(0, 12);
+const totalMins = posts.reduce((n, p) => n + readingTime(p.body), 0);
+---
+
+<BaseLayout title="半途">
+  <div class="wrap">
+    <section class="hero">
+      <p class="cmd"><b>~/halfway</b> <i>$</i> cat about.txt</p>
+      <h1 class="hero-title">做些自己的小项目。<br />顺便把<em>踩过的坑</em>都记下来。</h1>
+      <p class="lead">
+        独立开发者。这里记录技术笔记、建站过程和我做过的东西——写失败的比写成功的多。
+      </p>
+      <div class="status">
+        <span>status: <b>writing</b></span>
+        <span>posts: {posts.length}</span>
+        <span>reading: {totalMins} min</span>
+        <span>stack: astro + markdown</span>
+      </div>
+    </section>
+
+    <h2 class="sect"><span>recent logs</span><i></i><a href="/posts/">全部 →</a></h2>
+    <div class="logs">
+      {latest.map((p, i) => (
+        <a class="log" href={`/posts/${postSlug(p)}/`}>
+          <span class="no">{String(i + 1).padStart(2, '0')}</span>
+          <time datetime={isoDate(p.data.date)}>{shortDate(p.data.date)}</time>
+          <h3>{p.data.title}</h3>
+          {p.data.tags[0] && <span class="tag">{p.data.tags[0]}</span>}
+        </a>
+      ))}
+    </div>
+
+    <h2 class="sect"><span>current project</span></h2>
+    <div class="panels">
+      <div class="panel">
+        <h3><small>project 01</small>这个博客 · 零服务器静态站</h3>
+        <p>Astro 手写主题、Markdown 写文章、GitHub 自动构建发布。没有数据库、没有后台，也没有月费。</p>
+        <div class="metric"><span>页面数</span><b>20</b></div>
+        <div class="metric"><span>整站体积</span><b>111 KB</b></div>
+        <div class="metric"><span>服务器成本</span><b>¥0 / 月</b></div>
+      </div>
+      <div class="panel">
+        <h3><small>stack</small>我在用什么</h3>
+        <div class="tags">
+          <span>Astro 5</span><span>TypeScript</span><span>Markdown</span>
+          <span>原生 CSS</span><span>Git</span><span>GitHub Actions</span><span>RSS</span>
+        </div>
+      </div>
+    </div>
+
+    {tags.length > 0 && (
+      <>
+        <h2 class="sect"><span>tags</span><i></i><a href="/tags/">全部标签 →</a></h2>
+        <div class="tags" style="margin-top:14px">
+          {tags.map(({ tag, count }) => (
+            <a class="tag" href={`/tags/${tag}/`} style="text-decoration:none">#{tag} <span style="opacity:.55">{count}</span></a>
+          ))}
+        </div>
+      </>
+    )}
+  </div>
+</BaseLayout>

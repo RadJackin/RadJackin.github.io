@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts, groupByYear, postSlug, isoDate, shortDate } from '../lib/posts';
+
+const posts = await getPosts();
+const years = groupByYear(posts);
+---
+
+<BaseLayout title="归档" description={`按年份归档的 ${posts.length} 篇文章。`}>
+  <div class="wrap">
+    <header class="page-head">
+      <h1>归档</h1>
+      <p>共 {posts.length} 篇 · {years.length} 个年份</p>
+    </header>
+
+    {years.map(({ year, posts }) => (
+      <section class="year">
+        <h2>{year} <span style="letter-spacing:0;color:var(--dim)">{posts.length} 篇</span></h2>
+        {posts.map((p) => (
+          <a class="arc" href={`/posts/${postSlug(p)}/`}>
+            <time datetime={isoDate(p.data.date)}>{shortDate(p.data.date)}</time>
+            <b>{p.data.title}</b>
+            <i>{p.data.tags.join(' · ')}</i>
+          </a>
+        ))}
+      </section>
+    ))}
+  </div>
+</BaseLayout>

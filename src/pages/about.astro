@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts, readingTime } from '../lib/posts';
+import { site } from '../site.config';
+
+const posts = await getPosts();
+const totalMins = posts.reduce((n, p) => n + readingTime(p.body), 0);
+---
+
+<BaseLayout title="关于" description="关于我、这个博客，以及我正在做的事。">
+  <div class="wrap">
+    <div class="article">
+      <header class="article-head">
+        <p class="crumbs"><a href="/">首页</a><span class="sep">/</span><span>关于</span></p>
+        <h1>关于</h1>
+      </header>
+
+      <div class="prose">
+        <p>
+          你好，我是{site.author}。独立开发者，平时写代码、写点东西、做几个没人用的小工具。
+        </p>
+        <p>
+          这个博客记录三件事：<strong>技术笔记</strong>（踩过的坑和最后的解法）、<strong>建站日志</strong>（这个网站本身怎么长出来的）、<strong>作品</strong>（做出来给别人看的东西）。
+        </p>
+        <p>
+          我写博客不是为了教谁，主要是因为——一个人做事的时候，如果没人验收，很容易自己骗自己。写下来会老实很多：写不清楚的地方，通常就是没想清楚的地方。
+        </p>
+
+        <h2>现在在做什么</h2>
+        <p>
+          在维护这个博客本身：把阅读体验做好、把发文流程压到 30 分钟以内。另外有几个还没成形的小项目，做出来会写在这里。
+        </p>
+
+        <h2>这个博客怎么搭的</h2>
+        <p>
+          静态站点，Astro 构建，托管在免费 CDN 上。没有数据库、没有后台、没有插件——文章就是仓库里的 Markdown 文件，所以十年后它大概率还能跑。
+        </p>
+      </div>
+
+      <div class="panels" style="margin-top:36px">
+        <div class="panel">
+          <h3><small>stats</small>数字</h3>
+          <div class="metric"><span>已发布</span><b>{posts.length} 篇</b></div>
+          <div class="metric"><span>累计阅读时长</span><b>{totalMins} 分钟</b></div>
+          <div class="metric"><span>更新频率</span><b>每周</b></div>
+        </div>
+        <div class="panel">
+          <h3><small>contact</small>联系</h3>
+          <div class="tags" style="margin-top:2px">
+            <a class="tag" href={`mailto:${site.email}`} style="text-decoration:none">email</a>
+            <a class="tag blue" href="/rss.xml" style="text-decoration:none">rss</a>
+            <a class="tag" href={site.github} style="text-decoration:none">github</a>
+          </div>
+          <p style="margin:14px 0 0;font-size:12.5px;color:var(--muted)">
+            想聊技术、写作、或者发现文章里有错，都欢迎直接发邮件。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

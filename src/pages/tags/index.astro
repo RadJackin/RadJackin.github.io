@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, tagCounts } from '../../lib/posts';
+
+const posts = await getPosts();
+const tags = tagCounts(posts);
+---
+
+<BaseLayout title="标签" description={`按标签浏览 ${posts.length} 篇文章。`}>
+  <div class="wrap">
+    <header class="page-head">
+      <h1>标签</h1>
+      <p>共 {tags.length} 个标签 · 点进去看该标签下的所有文章</p>
+    </header>
+
+    <div class="tag-grid">
+      {tags.map(({ tag, count }) => (
+        <a class="tag-card" href={`/tags/${tag}/`}>
+          <span style="font:inherit;color:inherit">#{tag}</span>
+          <span>{count}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

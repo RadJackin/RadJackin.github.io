@@ -1,0 +1,35 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, postSlug, shortDate, isoDate, tagCounts } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return tagCounts(posts).map(({ tag }) => ({
+    params: { tag },
+    props: { tag },
+  }));
+}
+
+const { tag } = Astro.props;
+const posts = (await getPosts()).filter((p) => p.data.tags.includes(tag));
+---
+
+<BaseLayout title={`#${tag}`} description={`标签「${tag}」下的 ${posts.length} 篇文章。`}>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="crumbs" style="margin-bottom:16px"><a href="/tags/">标签</a><span class="sep">/</span><span>#{tag}</span></p>
+      <h1>#{tag}</h1>
+      <p>共 {posts.length} 篇</p>
+    </header>
+
+    <div class="logs" style="margin-top:26px">
+      {posts.map((p, i) => (
+        <a class="log" href={`/posts/${postSlug(p)}/`}>
+          <span class="no">{String(i + 1).padStart(2, '0')}</span>
+          <time datetime={isoDate(p.data.date)}>{shortDate(p.data.date)}</time>
+          <h3>{p.data.title}</h3>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
