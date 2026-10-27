@@ -41,8 +41,8 @@ const totalMins = posts.reduce((n, p) => n + readingTime(p.body), 0);
       <div class="panel">
         <h3><small>project 01</small>这个博客 · 零服务器静态站</h3>
         <p>Astro 手写主题、Markdown 写文章、GitHub 自动构建发布。没有数据库、没有后台，也没有月费。</p>
-        <div class="metric"><span>页面数</span><b>20</b></div>
-        <div class="metric"><span>整站体积</span><b>111 KB</b></div>
+        <div class="metric"><span>已发布文章</span><b>{posts.length} 篇</b></div>
+        <div class="metric"><span>运行时依赖</span><b>0 个</b></div>
         <div class="metric"><span>服务器成本</span><b>¥0 / 月</b></div>
       </div>
       <div class="panel">
