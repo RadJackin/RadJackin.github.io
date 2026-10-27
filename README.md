@@ -74,36 +74,35 @@ func hello() -> void:
 
 ---
 
-## 三、部署上线（推荐：一键发布到 GitHub）
+## 三、部署上线（已配置好：分支部署，无需 CI）
 
-### 方式 A：一键脚本（推荐，配置一次，以后发文即上线）
+当前博客已经部署在 **https://radjackin.github.io/**，用的是 GitHub Pages 的「分支部署」：
 
-前提：电脑上装了 GitHub CLI（`winget install GitHub.cli`，本机已经装好）。
+- 仓库：`RadJackin/RadJackin.github.io`（公开）
+- Pages 来源：`main` 分支的 **`/docs`** 目录
+- 每次发布：本地构建 → 产物复制到 `docs/` → 提交 → 推送 → 1 分钟后线上更新
 
-1. 双击 **`一键发布.cmd`**
-2. 第一次运行会让你登录 GitHub：浏览器里粘贴终端给的 8 位代码，点 Authorize
-3. 脚本自动完成：建仓库 → 推送代码 → 开启 Pages → 设置站点地址
-4. 等 1～2 分钟，你的博客就在 `https://你的用户名.github.io`
+### 方式 A：一键脚本（日常只用这个）
 
-**以后每次发完文章**：双击同一个脚本 → 自动提交、推送、重新构建，1 分钟后线上更新。不用碰命令行，也不用再登录。
+双击 **`一键发布.cmd`**，它会：
 
-> 仓库名用脚本默认的 `你的用户名.github.io`（挂在根路径，零配置）。
-> 如果你想用别的仓库名（比如 `blog`），博客会变成 `你的用户名.github.io/blog/`，站内链接需要额外配置，告诉我我帮你改。
+1. 检查 GitHub 登录（第一次会引导登录，之后免登录）
+2. 用 `SITE_URL` 构建整站（`npm run build`）
+3. 把 `dist/` 同步到 `docs/`
+4. 提交、推送，触发 GitHub Pages 重新发布
+5. 打印线上地址
 
-### 方式 B：手动 GitHub（不想用脚本时）
+> **改了域名怎么办**：改 `astro.config.mjs` 里的 `site` 字段 + `public/robots.txt` 里的 Sitemap 地址，再双击脚本发布一次。
 
-1. 在 GitHub 新建仓库，**名字必须叫 `你的用户名.github.io`**，选 Public
-2. 回到本地项目文件夹，依次执行（地址换成你的）：
-   ```
-   git init -b main
-   git add -A
-   git commit -m "初始化博客"
-   git remote add origin https://github.com/你的用户名/你的用户名.github.io.git
-   git push -u origin main
-   ```
-3. 仓库 Settings → Pages → Source 选 **GitHub Actions**
-4. 仓库 Settings → Variables → Actions → 新建 `SITE_URL`，值为 `https://你的用户名.github.io`
-5. 等 Actions 跑完（约 1 分钟），打开网址
+### 方式 B：手动执行（不想用脚本时）
+
+```
+npm run build
+robocopy dist docs /MIR
+git add -A
+git commit -m "publish"
+git push
+```
 
 ### 方式 C：Vercel / Cloudflare Pages 拖拽（完全不用 Git）
 
@@ -119,9 +118,12 @@ func hello() -> void:
 1. 在任意域名商买一个（`.com` 约 ¥70～90/年）
 2. 在 GitHub 仓库 Settings → Pages → Custom domain 填入域名
 3. 到域名商后台加 DNS 记录（按 GitHub 提示，一般 10 分钟生效）
-4. 把仓库变量 `SITE_URL` 改成你的正式域名（否则 sitemap / RSS 里还是旧地址）
+4. 改 `astro.config.mjs` 的 `site` 和 `public/robots.txt` 的 Sitemap，重新发布
+
+> **重要**：`public/.nojekyll` 这个文件不能删。GitHub Pages 默认用 Jekyll 处理静态文件，会忽略 `_astro/` 这类下划线开头的目录（样式全在里面），`.nojekyll` 就是用来关掉 Jekyll 的。
 
 > 用 Vercel / Cloudflare / GitHub Pages 托管**不需要 ICP 备案**。只有服务器在中国大陆才需要。
+
 
 ---
 
