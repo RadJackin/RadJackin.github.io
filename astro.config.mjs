@@ -1,9 +1,8 @@
 import { defineConfig } from 'astro/config';
 import sitemap from '@astrojs/sitemap';
 
-// 上线前只需要改这一行：改成你的真实网址（GitHub Pages 或自己的域名）
-// 也可以不改，用环境变量 SITE_URL 覆盖
-const SITE = process.env.SITE_URL || 'https://halfway.example.com';
+// 正式网址。改了域名只需要改这一行（或设置环境变量 SITE_URL 覆盖）
+const SITE = process.env.SITE_URL || 'https://radjackin.github.io';
 
 export default defineConfig({
   site: SITE,

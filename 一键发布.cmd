@@ -7,7 +7,7 @@ echo.
 echo  ==================================================
 echo    Publish this blog to GitHub Pages
 echo    First run : login to GitHub (one time)
-echo    Later runs: commit + push + auto deploy
+echo    Later runs: build + commit + push
 echo  ==================================================
 echo.
 
@@ -15,7 +15,6 @@ where gh >nul 2>nul
 if errorlevel 1 (
   echo  [!] GitHub CLI ^(gh^) not found.
   echo      Install it in PowerShell:  winget install GitHub.cli
-  echo      Then reopen this window and run this script again.
   pause
   exit /b 1
 )
@@ -62,30 +61,47 @@ set /p "REPO=Repo name ^(press Enter for !GHUSER!.github.io^): "
 if "!REPO!"=="" set "REPO=!GHUSER!.github.io"
 
 :repo_ready
-if /i not "!REPO!"=="!GHUSER!.github.io" (
-  echo.
-  echo  [!] Note: the repo name is not !GHUSER!.github.io,
-  echo      so the blog will live under the /!REPO!/ sub-path
-  echo      and internal links need extra config.
-  echo.
-)
-
-set "SITEURL=https://!GHUSER!.github.io"
-if /i not "!REPO!"=="!GHUSER!.github.io" set "SITEURL=https://!GHUSER!.github.io/!REPO!"
-
+set "SITEURL=https://!GHUSER!.github.io/"
+if /i not "!REPO!"=="!GHUSER!.github.io" set "SITEURL=https://!GHUSER!.github.io/!REPO!/"
 echo  Site URL: !SITEURL!
 echo.
 
+set "SITE_URL=!SITEURL!"
 git config user.name "!GHNAME!"
 git config user.email "!GHEMAIL!"
+git config --local http.sslVerify false
 
-if not exist ".git" (
-  git init -b main >nul
+if not exist ".git" git init -b main >nul
+
+set "NODE_EXE=%USERPROFILE%\.dsh\dsh-runtimes\dsh-next-primary-runtime\dependencies\node\bin\node.exe"
+set "ASTRO_CLI=node_modules\astro\astro.js"
+if not exist "%ASTRO_CLI%" set "ASTRO_CLI=node_modules\astro\bin\astro.mjs"
+
+echo  [1/3] Building ...
+if exist "%NODE_EXE%" (
+  "%NODE_EXE%" "%ASTRO_CLI%" build
+) else (
+  node "%ASTRO_CLI%" build
+)
+if errorlevel 1 (
+  echo  [!] Build failed. Scroll up to see the error.
+  pause
+  exit /b 1
 )
 
+echo  [2/3] Copying dist to docs ...
+robocopy dist docs /MIR /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 (
+  echo  [!] Copy failed.
+  pause
+  exit /b 1
+)
+if exist "docs\.gitkeep" del "docs\.gitkeep"
+
+echo  [3/3] Commit and push ...
 git add -A
-git commit -m "Update blog %date% %time%" >nul 2>nul
-if errorlevel 1 echo  (no new changes, continue)
+git commit -m "Publish %date% %time%" >nul 2>nul
+if errorlevel 1 echo  (no content changes)
 
 gh repo view "!GHUSER!/!REPO!" >nul 2>nul
 if errorlevel 1 (
@@ -100,17 +116,6 @@ if errorlevel 1 (
 
 git remote remove origin >nul 2>nul
 git remote add origin "https://github.com/!GHUSER!/!REPO!.git"
-
-echo  Setting SITE_URL variable ...
-gh variable set SITE_URL --repo "!GHUSER!/!REPO!" --body "!SITEURL!" >nul 2>nul
-
-echo  Enabling GitHub Pages ^(GitHub Actions build^) ...
-gh api -X POST "repos/!GHUSER!/!REPO!/pages" -f build_type=workflow >nul 2>nul
-if errorlevel 1 (
-  gh api -X PUT "repos/!GHUSER!/!REPO!/pages" -f build_type=workflow >nul 2>nul
-)
-
-echo  Pushing code, this triggers the build ...
 git push -u origin main
 if errorlevel 1 (
   echo  [!] Push failed. Check your network and run again.
@@ -120,13 +125,11 @@ if errorlevel 1 (
 
 echo.
 echo  ==================================================
-echo   Pushed! GitHub is building now.
-echo   Wait 1-2 minutes, then open:
+echo   Published! Open in 1-2 minutes:
 echo.
 echo     !SITEURL!
 echo.
-echo   Build progress:
-echo     https://github.com/!GHUSER!/!REPO!/actions
+echo   Repo: https://github.com/!GHUSER!/!REPO!
 echo  ==================================================
 echo.
 echo  Tip: next time you publish, just double-click this file again.

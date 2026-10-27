@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="zh-CN"> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>不装任何服务，给静态博客做站内搜索 · 半途</title><meta name="description" content="构建时生成一份 JSON 索引，浏览器端过滤。30 行代码，不依赖任何搜索服务，也不增加首屏负担。"><link rel="canonical" href="https://radjackin.github.io/posts/search-without-server/"><meta name="generator" content="Astro v5.18.2"><meta name="theme-color" content="#0b0d10"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="alternate" type="application/rss+xml" title="半途" href="https://radjackin.github.io/rss.xml"><meta property="og:type" content="article"><meta property="og:site_name" content="半途"><meta property="og:title" content="不装任何服务，给静态博客做站内搜索 · 半途"><meta property="og:description" content="构建时生成一份 JSON 索引，浏览器端过滤。30 行代码，不依赖任何搜索服务，也不增加首屏负担。"><meta property="og:url" content="https://radjackin.github.io/posts/search-without-server/"><meta property="og:locale" content="zh_CN"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="不装任何服务，给静态博客做站内搜索 · 半途"><meta name="twitter:description" content="构建时生成一份 JSON 索引，浏览器端过滤。30 行代码，不依赖任何搜索服务，也不增加首屏负担。"><link rel="stylesheet" href="/_astro/_slug_.DWatlOik.css"></head> <body> <a class="sr-only" href="#content">跳到正文</a> <header class="site"> <div class="site-inner"> <a class="brand" href="/"> <span class="dot" aria-hidden="true"></span> <span>半途</span> <span class="sub">~ halfway</span> </a> <nav class="top" aria-label="主导航"> <a href="/posts/" aria-current="page">日志</a><a href="/tags/">标签</a><a href="/archive/">归档</a><a href="/search/">搜索</a><a href="/about/">关于</a> </nav> </div> </header> <main class="main" id="content">  <div id="progress" aria-hidden="true"></div> <div class="wrap"> <article class="article"> <header class="article-head"> <p class="crumbs"> <a href="/posts/">日志</a> <span class="sep">/</span> <span>建站</span> </p> <h1>不装任何服务，给静态博客做站内搜索</h1> <div class="article-meta"> <time datetime="2026-10-19">2026.10.19</time> <span class="sep">·</span> <span>2 分钟</span> <span class="sep">·</span> <a href="/tags/技术笔记/">#技术笔记</a><a href="/tags/前端/">#前端</a> </div> </header> <div class="prose">  <p><strong>一句话结论</strong>：文章不多的时候（&#x3C; 500 篇），一份 JSON 索引 + 一次 <code>includes()</code> 就够了，不需要 Algolia、不需要 Elasticsearch。</p>
+<h2 id="为什么不用现成的搜索服务">为什么不用现成的搜索服务</h2>
+<p>先说结论：不是不能用，是<strong>不值得</strong>。</p>
+<ul>
+<li>第三方搜索服务要注册、要配 key、有免费额度限制，还可能在你不知道的时候停服；</li>
+<li>全量索引库（比如前端全文搜索库）能离线跑，但会引入几百 KB 的依赖，对十几篇文章的博客是过度设计；</li>
+<li>而个人博客的搜索需求其实很朴素：<strong>输入关键词，找到标题/摘要里含这个词的文章</strong>。</li>
+</ul>
+<h2 id="第一步构建时导出索引">第一步：构建时导出索引</h2>
+<p>Astro 里加一个路由端点，构建时会自动生成一个静态 JSON 文件：</p>
+<pre class="astro-code vesper" style="background-color:#101010;color:#FFF; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="color:#8B8B8B94">// src/pages/search.json.ts</span></span>
+<span class="line"><span style="color:#A0A0A0">import</span><span style="color:#A0A0A0"> type</span><span style="color:#FFF"> { APIRoute } </span><span style="color:#A0A0A0">from</span><span style="color:#99FFE4"> 'astro'</span><span style="color:#FFF">;</span></span>
+<span class="line"><span style="color:#A0A0A0">import</span><span style="color:#FFF"> { getPosts, postSlug } </span><span style="color:#A0A0A0">from</span><span style="color:#99FFE4"> '../lib/posts'</span><span style="color:#FFF">;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#A0A0A0">export</span><span style="color:#A0A0A0"> const</span><span style="color:#FFC799"> GET</span><span style="color:#A0A0A0">:</span><span style="color:#FFC799"> APIRoute</span><span style="color:#A0A0A0"> =</span><span style="color:#A0A0A0"> async</span><span style="color:#FFF"> () </span><span style="color:#A0A0A0">=></span><span style="color:#FFF"> {</span></span>
+<span class="line"><span style="color:#A0A0A0">  const</span><span style="color:#FFF"> posts </span><span style="color:#A0A0A0">=</span><span style="color:#A0A0A0"> await</span><span style="color:#FFC799"> getPosts</span><span style="color:#FFF">();</span></span>
+<span class="line"><span style="color:#A0A0A0">  const</span><span style="color:#FFF"> body </span><span style="color:#A0A0A0">=</span><span style="color:#FFF"> posts.</span><span style="color:#FFC799">map</span><span style="color:#FFF">((p) </span><span style="color:#A0A0A0">=></span><span style="color:#FFF"> ({</span></span>
+<span class="line"><span style="color:#FFF">    title: p.data.title,</span></span>
+<span class="line"><span style="color:#FFF">    description: p.data.description,</span></span>
+<span class="line"><span style="color:#FFF">    slug: </span><span style="color:#FFC799">postSlug</span><span style="color:#FFF">(p),</span></span>
+<span class="line"><span style="color:#FFF">    tags: p.data.tags,</span></span>
+<span class="line"><span style="color:#FFF">  }));</span></span>
+<span class="line"><span style="color:#A0A0A0">  return</span><span style="color:#A0A0A0"> new</span><span style="color:#FFC799"> Response</span><span style="color:#FFF">(JSON.</span><span style="color:#FFC799">stringify</span><span style="color:#FFF">(body), {</span></span>
+<span class="line"><span style="color:#FFF">    headers: { </span><span style="color:#99FFE4">'Content-Type'</span><span style="color:#FFF">: </span><span style="color:#99FFE4">'application/json; charset=utf-8'</span><span style="color:#FFF"> },</span></span>
+<span class="line"><span style="color:#FFF">  });</span></span>
+<span class="line"><span style="color:#FFF">};</span></span></code></pre>
+<p>产物是 <code>dist/search.json</code>，一篇文章约 200 字节。<strong>50 篇文章也就 10 KB。</strong></p>
+<h2 id="第二步浏览器端过滤">第二步：浏览器端过滤</h2>
+<pre class="astro-code vesper" style="background-color:#101010;color:#FFF; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#A0A0A0">let</span><span style="color:#FFF"> items </span><span style="color:#A0A0A0">=</span><span style="color:#FFF"> [];</span></span>
+<span class="line"><span style="color:#FFC799">fetch</span><span style="color:#FFF">(</span><span style="color:#99FFE4">'/search.json'</span><span style="color:#FFF">).</span><span style="color:#FFC799">then</span><span style="color:#FFF">((r) </span><span style="color:#A0A0A0">=></span><span style="color:#FFF"> r.</span><span style="color:#FFC799">json</span><span style="color:#FFF">()).</span><span style="color:#FFC799">then</span><span style="color:#FFF">((d) </span><span style="color:#A0A0A0">=></span><span style="color:#FFF"> (items </span><span style="color:#A0A0A0">=</span><span style="color:#FFF"> d));</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#A0A0A0">function</span><span style="color:#FFC799"> render</span><span style="color:#FFF">(q) {</span></span>
+<span class="line"><span style="color:#A0A0A0">  const</span><span style="color:#FFF"> hits </span><span style="color:#A0A0A0">=</span><span style="color:#FFF"> items.</span><span style="color:#FFC799">filter</span><span style="color:#FFF">((p) </span><span style="color:#A0A0A0">=></span></span>
+<span class="line"><span style="color:#99FFE4">    `${</span><span style="color:#FFF">p</span><span style="color:#99FFE4">.</span><span style="color:#FFF">title</span><span style="color:#99FFE4">} ${</span><span style="color:#FFF">p</span><span style="color:#99FFE4">.</span><span style="color:#FFF">description</span><span style="color:#99FFE4">} ${</span><span style="color:#FFF">p</span><span style="color:#99FFE4">.</span><span style="color:#FFF">tags</span><span style="color:#99FFE4">.</span><span style="color:#FFC799">join</span><span style="color:#99FFE4">(</span><span style="color:#99FFE4">' '</span><span style="color:#99FFE4">)</span><span style="color:#99FFE4">}`</span></span>
+<span class="line"><span style="color:#FFF">      .</span><span style="color:#FFC799">toLowerCase</span><span style="color:#FFF">()</span></span>
+<span class="line"><span style="color:#FFF">      .</span><span style="color:#FFC799">includes</span><span style="color:#FFF">(q.</span><span style="color:#FFC799">toLowerCase</span><span style="color:#FFF">())</span></span>
+<span class="line"><span style="color:#FFF">  );</span></span>
+<span class="line"><span style="color:#8B8B8B94">  // 渲染到列表里……</span></span>
+<span class="line"><span style="color:#FFF">}</span></span></code></pre>
+<p>就这些。没有索引构建、没有分词、没有网络请求（除了那一次 10 KB 的 fetch）。</p>
+<h2 id="三个细节让体验变好">三个细节让体验变好</h2>
+<p><strong>1. 输入即过滤，不要按回车</strong>
+<code>input</code> 事件直接过滤，符合所有人对搜索框的直觉。</p>
+<p><strong>2. 空状态要说人话</strong>
+“没有匹配的文章 —— 试试更短的关键词”，比一个空白区域好得多。</p>
+<p><strong>3. 转义 HTML</strong>
+搜索结果要拼进 <code>innerHTML</code>，标题里如果有 <code>&#x3C;</code> 就会被当成标签。最简单的处理：</p>
+<pre class="astro-code vesper" style="background-color:#101010;color:#FFF; overflow-x: auto;" tabindex="0" data-language="js"><code><span class="line"><span style="color:#A0A0A0">const</span><span style="color:#FFC799"> esc</span><span style="color:#A0A0A0"> =</span><span style="color:#FFF"> (s) </span><span style="color:#A0A0A0">=></span></span>
+<span class="line"><span style="color:#FFF">  s.</span><span style="color:#FFC799">replace</span><span style="color:#FFF">(</span><span style="color:#A0A0A0">/[&#x26;&#x3C;>"]/</span><span style="color:#FFC799">g</span><span style="color:#FFF">, (c) </span><span style="color:#A0A0A0">=></span></span>
+<span class="line"><span style="color:#FFF">    ({ </span><span style="color:#99FFE4">'&#x26;'</span><span style="color:#FFF">: </span><span style="color:#99FFE4">'&#x26;amp;'</span><span style="color:#FFF">, </span><span style="color:#99FFE4">'&#x3C;'</span><span style="color:#FFF">: </span><span style="color:#99FFE4">'&#x26;lt;'</span><span style="color:#FFF">, </span><span style="color:#99FFE4">'>'</span><span style="color:#FFF">: </span><span style="color:#99FFE4">'&#x26;gt;'</span><span style="color:#FFF">, </span><span style="color:#99FFE4">'"'</span><span style="color:#FFF">: </span><span style="color:#99FFE4">'&#x26;quot;'</span><span style="color:#FFF"> }[c])</span></span>
+<span class="line"><span style="color:#FFF">  );</span></span></code></pre>
+<h2 id="这个方案的边界">这个方案的边界</h2>
+<ul>
+<li><strong>没分词</strong>：搜”静态站”能命中”静态站点”，搜”站点 静态”搜不到。中文用户的输入习惯下，大多数时候没影响；</li>
+<li><strong>只搜标题/摘要/标签</strong>：搜不到正文里的词。要正文搜索，就得把全文塞进 JSON（体积涨 20 倍），或者换 Pagefind 在构建时生成真正的中文可分片索引；</li>
+<li><strong>50 篇以内随便用</strong>，500 篇以上建议换方案。</li>
+</ul>
+<h2 id="最后">最后</h2>
+<p>一个搜索功能，一行后端代码都没有，构建完就是几个静态文件。<strong>能靠静态文件解决的，就别引入服务</strong>——这是今年我做减法最有效的原则。</p>
+<blockquote>
+<p>下一篇写：写一篇博客要 4 小时？我把流程拆成了 6 步。</p>
+</blockquote>  </div> <footer class="article-foot"> <div class="tags"> <a class="tag" href="/tags/技术笔记/">#技术笔记</a><a class="tag" href="/tags/前端/">#前端</a> </div> <nav class="pager" aria-label="上一篇 / 下一篇"> <a href="/posts/write-faster/"> <small>← 更早</small> <b>写一篇博客要 4 小时？我把流程拆成了 6 步</b> </a> <a class="next" href="/posts/static-blog/"> <small>更新 →</small> <b>我把博客做成一个 111 KB 的静态站，0 服务器、0 月费</b> </a> </nav> <a class="back" href="/posts/">← 回到全部日志</a> </footer> </article> </div> <script type="module">const o=document.getElementById("progress"),n=()=>{if(!o)return;const e=document.documentElement,t=e.scrollHeight-e.clientHeight;o.style.width=t>0?`${Math.min(100,e.scrollTop/t*100)}%`:"0%"};document.addEventListener("scroll",n,{passive:!0});window.addEventListener("resize",n);n();document.querySelectorAll(".prose pre").forEach(e=>{const t=document.createElement("button");t.className="copy-btn",t.type="button",t.textContent="复制",t.addEventListener("click",async()=>{const c=e.querySelector("code")?.innerText??"";try{await navigator.clipboard.writeText(c),t.textContent="已复制",t.classList.add("done")}catch{t.textContent="复制失败"}setTimeout(()=>{t.textContent="复制",t.classList.remove("done")},1600)}),e.appendChild(t)});</script>  </main> <footer class="site"> <div class="foot-inner"> <div>© 2026 半途 · 用 Astro 搭的静态博客</div> <div> <a href="/rss.xml">rss</a> ·
+<a href="/posts/">全部日志</a> ·
+<a href="mailto:hi@example.com">email</a> </div> </div> </footer> </body></html>

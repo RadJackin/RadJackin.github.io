@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://radjackin.github.io/sitemap-index.xml
